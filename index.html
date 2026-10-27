@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keinshu TV - Smart TV Experience</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & ReactDOM (Production UMD Builds) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone (JSX Compiler) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(14, 19, 31, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.35);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 240, 255, 0.7);
+    }
+    .tv-focusable:focus {
+      outline: none;
+    }
+  </style>
+</head>
+<body class="bg-[#04060a] text-slate-100 font-sans overflow-hidden select-none">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      const iconMap = {
+        tv: "fa-solid fa-tv",
+        home: "fa-solid fa-house",
+        film: "fa-solid fa-film",
+        clapperboard: "fa-solid fa-clapperboard",
+        puzzle: "fa-solid fa-puzzle-piece",
+        settings: "fa-solid fa-gear",
+        monitor: "fa-solid fa-display",
+        star: "fa-solid fa-star",
+        play: "fa-solid fa-play",
+        info: "fa-solid fa-circle-info",
+        sparkles: "fa-solid fa-wand-magic-sparkles",
+        plus: "fa-solid fa-plus",
+        inbox: "fa-solid fa-inbox",
+        "toggle-right": "fa-solid fa-toggle-on",
+        "toggle-left": "fa-solid fa-toggle-off",
+        "trash-2": "fa-solid fa-trash",
+        "shield-check": "fa-solid fa-shield-halved",
+        sliders: "fa-solid fa-sliders",
+        "arrow-left": "fa-solid fa-arrow-left",
+        download: "fa-solid fa-download",
+        x: "fa-solid fa-xmark",
+        "refresh-cw": "fa-solid fa-rotate",
+        "alert-triangle": "fa-solid fa-triangle-exclamation",
+        "alert-circle": "fa-solid fa-circle-exclamation",
+        pause: "fa-solid fa-pause",
+        "volume-2": "fa-solid fa-volume-high",
+        subtitles: "fa-solid fa-closed-captioning",
+        fire: "fa-solid fa-fire",
+        spider: "fa-solid fa-spider",
+        crosshairs: "fa-solid fa-crosshairs",
+        child: "fa-solid fa-child",
+        hat: "fa-solid fa-hat-cowboy",
+        skull: "fa-solid fa-skull-crossbones",
+        dragon: "fa-solid fa-dragon",
+        compass: "fa-solid fa-compass"
+      };
+
+      const iconClass = iconMap[name] || "fa-solid fa-circle";
+      return <i className={`${iconClass} ${className} flex items-center justify-center`} />;
+    };
+
+    const ImageWithFallback = ({ src, alt, className = "", title = "", year = "" }) => {
+      const [hasError, setHasError] = useState(false);
+
+      useEffect(() => {
+        setHasError(false);
+      }, [src]);
+
+      if (hasError || !src) {
+        return (
+          <div className={`w-full h-full bg-gradient-to-br from-indigo-950 via-slate-900 to-cyan-950 flex flex-col justify-between p-4 border border-cyan-500/20 rounded-2xl ${className}`}>
+            <div className="flex justify-between items-center text-[10px] font-mono text-cyan-400">
+              <span className="font-bold">4K ULTRA</span>
+              <span>{year}</span>
+            </div>
+            <div className="text-center my-auto px-2">
+              <Icon name="film" className="text-cyan-400 text-2xl mx-auto mb-2" />
+              <p className="font-black text-xs uppercase text-white line-clamp-2 leading-snug">{title || alt}</p>
+            </div>
+            <div className="text-[10px] text-cyan-400 font-bold text-center tracking-widest uppercase">Keinshu TV</div>
+          </div>
+        );
+      }
+
+      return (
+        <img
+          src={src}
+          alt={alt}
+          onError={() => setHasError(true)}
+          className={`w-full h-full object-cover ${className}`}
+        />
+      );
+    };
+
+    // --- LISTA COMPLETA COM 200 TÍTULOS REAIS E NOMES ESPECÍFICOS ---
+    const generateCatalog = () => {
+      const db = {
+        acao: [
+          "John Wick 4: Baba Yaga", "Resgate 2", "Missão: Impossível - Acerto de Contas", "Top Gun: Maverick", 
+          "Mad Max: Estrada da Fúria", "Gladiador II", "Velozes e Furiosos 10", "Bad Boys: Até o Fim", 
+          "Operação Xangai", "John Wick 3: Parabellum", "Equalizer 3: O Ponto Final", "Carga Explosiva: Legado", 
+          "Duro de Matar: Um Bom Dia para Morrer", "Alerta Vermelho", "Resgate no Ártico", "Força de Elite", 
+          "Assassino a Preço Fixo 2", "Guerra Amanhã", "Esquadrão Suicida", "Vingadores: Ultimato", 
+          "Homem de Ferro 3", "Capitão América: Guerra Civil", "Thor: Ragnarok", "Pantera Negra", "Shang-Chi"
+        ],
+        aventura: [
+          "Duna: Parte 2", "Indiana Jones e o Chamado do Destino", "Avatar: O Caminho da Água", "Piratas do Caribe", 
+          "Jumanji: Próxima Fase", "Animais Fantásticos", "As Crônicas de Nárnia", "Percy Jackson", 
+          "Rei Arthur: A Lenda da Espada", "Mogli: Entre Dois Mundos", "A Lenda do Tesouro Perdido", "Prince of Persia", 
+          "Tomb Raider: A Origem", "Uncharted: Fora do Mapa", "Kong: A Ilha da Caveira", "Godzilla e Kong", 
+          "Perdido em Marte", "Interestelar", "Gravidade", "Ad Astra", 
+          "Viagem ao Centro da Terra", "Mundo Perdido", "A Bússola de Ouro", "Eragon", "Stardust: O Mistério da Estrela"
+        ],
+        series: [
+          "The Last of Us", "Fallout", "Stranger Things", "Succession", 
+          "The White Lotus", "House of the Dragon", "The Boys", "Breaking Bad", 
+          "Better Call Saul", "Chernobyl", "O Gambito da Rainha", "Peaky Blinders", 
+          "Vikings", "The Crown", "Ozark", "Game of Thrones", 
+          "Severance", "Ted Lasso", "Euphoria", "The Mandalorian", 
+          "Andor", "Loki", "Cavaleiro da Lua", "WandaVision", "The Bear"
+        ],
+        kids: [
+          "Divertida Mente 2", "Super Mario Bros: O Filme", "Gato de Botas 2", "Minions 2: A Origem de Gru", 
+          "Moana 2", "Toy Story 4", "Frozen II", "Encanto", 
+          "Procurando Dory", "Carros 3", "Os Incríveis 2", "Soul", 
+          "Luca", "Turning Red: Crescer é uma Fera", "Elementar", "Homem-Aranha no Aranhaverso", 
+          "Shrek 2", "Kung Fu Panda 4", "Meu Malvado Favorito 4", "A Fuga das Galinhas 2", 
+          "Madagascar 3", "A Era do Gelo 4", "Hotel Transilvânia 4", "Pinocho de Guillermo del Toro", "O Menino e a Garça"
+        ],
+        tiro: [
+          "Sniper Americano", "O Resgatedo Soldado Ryan", "13 Horas: Os Soldados Secretos de Benghazi", "Falcão Negro em Perigo", 
+          "Platoon", "Nascido para Matar", "Coração de Ferro", "Invasão à Casa Branca", 
+          "Invasão a Londres", "Invasão ao Serviço Secreto", "Atirador Certo", "O Sobrevivente", 
+          "Alvos Manuais", "A Hora Mais Escura", "Guerra ao Terror", "G.I. Joe: A Origem de Cobra", 
+          "Batalha de Los Angeles", "Código de Conduta", "Protegendo o Inimigo", "Rota de Fuga", 
+          "Os Mercenários 4", "Guerra Civil", "Esquadrão 6", "Zona de Combate", "Fúria em Alto Mar"
+        ],
+        anime: [
+          "Attack on Titan", "Demon Slayer: Kimetsu no Yaiba", "Jujutsu Kaisen", "Arcane", 
+          "Cyberpunk: Edgerunners", "One Piece Film: Red", "Dragon Ball Super: Super Hero", "Your Name", 
+          "A Viagem de Chihiro", "Castlevania", "Mob Psycho 100", "Chainsaw Man", 
+          "Spy x Family", "Bleach: Thousand-Year Blood War", "My Hero Academia", "Vinland Saga", 
+          "Hunter x Hunter", "Death Note", "Fullmetal Alchemist: Brotherhood", "Tokyo Revengers", 
+          "Blue Lock", "Solo Leveling", "O Castelo Animado", "Túmulo dos Vagalumes", "Princess Mononoke"
+        ],
+        faroeste: [
+          "Django Livre", "Os Oito Odiados", "Bravura Indômita", "Red Dead Redemption (Movie Cut)", 
+          "Os Indomáveis", "Django (Clássico)", "Três Homens em Conflito", "Por Uns Dólares a Mais", 
+          "Por um Punhado de Dólares", "Shane, O Valente", "Rastros de Ódio", "西部 (Oeste Sem Lei)", 
+          "Os Imperdoáveis", "Terra de Deserdados", "Cowboys & Aliens", "Waco: As Negociações", 
+          "A Balada de Buster Scruggs", "Meek's Cutoff", "O Homem que Matou o Facínora", "Até que a Morte os Encontre", 
+          "Campo dos Sonhos do Oeste", "Vingança a Cavalo", "Rastro de Sangue", "Justiça implacável", "O Último Pistoleiro"
+        ],
+        zumbis: [
+          "Invasão Zumbi (Train to Busan)", "Madrugada dos Mortos", "Extermínio", "Guerra Mundial Z", 
+          "Resident Evil 2: Apocalipse", "Zumbilândia", "Army of the Dead: Invasão em Las Vegas", "Terra dos Mortos", 
+          "A Noite dos Mortos-Vivos", "Meu Namorado é um Zumbi", "Cargo", "Invasão Zumbi 2: Peninsula", 
+          "Alive (#Vivo)", "Blood Red Sky", "The Sadness", "Ravenous (Les Affamés)", 
+          "Rec (Relatório de Execução)", "Planet Terror", "Quarentena", "Shaun of the Dead", 
+          "The Cured", "Wyrmwood: Road of the Dead", "Black Summer", "Kingdom", "All of Us Are Dead"
+        ]
+      };
+
+      const categories = ['acao', 'aventura', 'series', 'kids', 'tiro', 'anime', 'faroeste', 'zumbis'];
+      const baseImages = [
+        'https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg',
+        'https://image.tmdb.org/t/p/w500/2cxhvwyEwRlysAmRH4iodkvo0z5.jpg',
+        'https://image.tmdb.org/t/p/w500/8cdWjhA2391S32f2s2j7c9X8s8.jpg',
+        'https://image.tmdb.org/t/p/w500/b33nnKl1GSFbao4l3fZDDqsMx0F.jpg',
+        'https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg',
+        'https://image.tmdb.org/t/p/w500/vpnPA5h9j4N6oP4u1A9J6e8c8.jpg',
+        'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
+        'https://image.tmdb.org/t/p/w500/if8QiqCI7WAGImKcJCfzp6VTyKA.jpg'
+      ];
+      const backdrops = [
+        'https://image.tmdb.org/t/p/w1280/iQFcwSGbZXMkeyKrxbPnwnRo5fl.jpg',
+        'https://image.tmdb.org/t/p/w1280/euY18q23A2RScWFbL3ilrmmWyR7.jpg',
+        'https://image.tmdb.org/t/p/w1280/y2caQ5BMgRDijlTzePHnny9VOSZ.jpg',
+        'https://image.tmdb.org/t/p/w1280/9SSEUrSqhljBMzRe4aBTh17rUaC.jpg'
+      ];
+
+      const items = [];
+      let counter = 1;
+
+      categories.forEach(catKey => {
+        const titleList = db[catKey];
+        for (let i = 0; i < 25; i++) {
+          const title = titleList[i] || `${catKey.toUpperCase()} Título ${i + 1}`;
+          const isSeries = catKey === 'series' || catKey === 'anime';
+          items.push({
+            id: `tt${9000000 + counter}`,
+            tmdbId: `${100000 + counter}`,
+            title: title,
+            category: catKey,
+            type: isSeries ? 'series' : 'movie',
+            year: 2018 + (i % 8),
+            rating: parseFloat((7.2 + (i % 2.5)).toFixed(1)),
+            duration: isSeries ? undefined : `${1 + (i % 2)}h ${30 + (i * 7) % 30}m`,
+            seasons: isSeries ? 1 + (i % 4) : undefined,
+            genres: [catKey.toUpperCase(), '4K Ultra HD'],
+            poster: baseImages[(counter + i) % baseImages.length],
+            backdrop: backdrops[(counter + i) % backdrops.length],
+            overview: `Obra-prima imperdível na categoria de ${catKey.toUpperCase()}. "${title}" apresenta enredo envolvente, atuações marcantes e qualidade de transmissão otimizada para Keinshu TV.`,
+            cast: ['Ator Estelar 1', 'Atriz Protagonista 2', 'Coadjuvante 3'],
+            episodes: isSeries ? [
+              { id: `tt${9000000 + counter}:1:1`, number: 1, title: 'Episódio 1: O Despertar', overview: 'Primeiro episódio eletrizante que dá início à saga.', duration: '48m' },
+              { id: `tt${9000000 + counter}:1:2`, number: 2, title: 'Episódio 2: A Reviravolta', overview: 'Segredos profundos são revelados e o perigo aumenta.', duration: '52m' }
+            ] : undefined
+          });
+          counter++;
+        }
+      });
+
+      return items;
+    };
+
+    const FULL_CATALOG = generateCatalog();
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('home');
+      const [currentView, setCurrentView] = useState('catalog');
+      const [selectedItem, setSelectedItem] = useState(null);
+      const [selectedEpisode, setSelectedEpisode] = useState(null);
+      const [selectedStream, setSelectedStream] = useState(null);
+      const [showStreamModal, setShowStreamModal] = useState(false);
+      
+      const defaultAddons = [
+        {
+          id: 'tv.nuvio.catalog',
+          name: 'Nuvio Catalog',
+          version: '1.0.0',
+          description: 'Catálogo oficial Nuvio para metadados e posters.',
+          icon: '🌐',
+          url: 'https://catalog.nuvio.tv/manifest.json',
+          types: ['movie', 'series'],
+          enabled: true,
+          installedAt: new Date().toLocaleDateString('pt-BR')
+        },
+        {
+          id: 'com.stremio.opensubtitles',
+          name: 'OpenSubtitles',
+          version: '3.0.0',
+          description: 'Busca automática de legendas em múltiplos idiomas.',
+          icon: '💬',
+          url: 'https://opensubtitles-v3.strem.io/manifest.json',
+          types: ['movie', 'series'],
+          enabled: true,
+          installedAt: new Date().toLocaleDateString('pt-BR')
+        }
+      ];
+
+      const [addons, setAddons] = useState(() => {
+        try {
+          const saved = localStorage.getItem('keinshu_user_addons');
+          return saved ? JSON.parse(saved) : defaultAddons;
+        } catch (e) {
+          return defaultAddons;
+        }
+      });
+
+      const [newAddonUrl, setNewAddonUrl] = useState('');
+      const [addonInputError, setAddonInputError] = useState('');
+      const [isInstalling, setIsInstalling] = useState(false);
+
+      const [streams, setStreams] = useState([]);
+      const [isFetchingStreams, setIsFetchingStreams] = useState(false);
+
+      const [tmdbApiKey, setTmdbApiKey] = useState(() => localStorage.getItem('keinshu_tmdb_key') || '6e49412b2a1c9f45e25e1d1c28898dc7');
+      const [saveNotice, setSaveNotice] = useState(false);
+
+      const [isPlaying, setIsPlaying] = useState(true);
+      const [playbackProgress, setPlaybackProgress] = useState(0);
+      const [duration, setDuration] = useState(0);
+      const [volume, setVolume] = useState(1);
+      const [isControlsVisible, setIsControlsVisible] = useState(true);
+      const [selectedSub, setSelectedSub] = useState('pt-br');
+      
+      const [focusZone, setFocusZone] = useState('catalog');
+      const [focusIndex, setFocusIndex] = useState(0);
+
+      const videoRef = useRef(null);
+      const controlsTimeoutRef = useRef(null);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('keinshu_user_addons', JSON.stringify(addons));
+        } catch (e) {
+          console.error('Falha ao salvar add-ons:', e);
+        }
+      }, [addons]);
+
+      const handleSaveSettings = () => {
+        localStorage.setItem('keinshu_tmdb_key', tmdbApiKey);
+        setSaveNotice(true);
+        setTimeout(() => setSaveNotice(false), 3000);
+      };
+
+      const handlePlayerMouseMove = useCallback(() => {
+        setIsControlsVisible(true);
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+        controlsTimeoutRef.current = setTimeout(() => {
+          if (currentView === 'player') setIsControlsVisible(false);
+        }, 3500);
+      }, [currentView]);
+
+      useEffect(() => {
+        if (currentView === 'player') handlePlayerMouseMove();
+      }, [currentView, handlePlayerMouseMove]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          const key = e.key;
+
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape', 'Backspace'].includes(key)) {
+            if (document.activeElement?.tagName !== 'INPUT') e.preventDefault();
+          }
+
+          if (currentView === 'player') {
+            setIsControlsVisible(true);
+            handlePlayerMouseMove();
+
+            if (key === 'Escape' || key === 'Backspace') {
+              setCurrentView(selectedItem ? 'detail' : 'catalog');
+            } else if (key === 'Enter' || key === ' ') {
+              if (videoRef.current) {
+                if (videoRef.current.paused) { videoRef.current.play(); setIsPlaying(true); }
+                else { videoRef.current.pause(); setIsPlaying(false); }
+              }
+            } else if (key === 'ArrowRight') {
+              if (videoRef.current) videoRef.current.currentTime += 10;
+            } else if (key === 'ArrowLeft') {
+              if (videoRef.current) videoRef.current.currentTime -= 10;
+            }
+            return;
+          }
+
+          if (showStreamModal) {
+            const activeStreamsCount = streams.length;
+            if (key === 'ArrowUp') setFocusIndex(prev => Math.max(0, prev - 1));
+            else if (key === 'ArrowDown') setFocusIndex(prev => Math.min(activeStreamsCount - 1, prev + 1));
+            else if (key === 'Enter') { if (streams[focusIndex]) launchPlayer(streams[focusIndex]); }
+            else if (key === 'Escape' || key === 'Backspace') { setShowStreamModal(false); setFocusZone('detail-actions'); setFocusIndex(0); }
+            return;
+          }
+
+          if (currentView === 'detail') {
+            if (key === 'Escape' || key === 'Backspace') {
+              setCurrentView('catalog');
+              setFocusZone('row-0');
+              setFocusIndex(0);
+            } else if (key === 'ArrowRight' || key === 'ArrowLeft') {
+              setFocusIndex(prev => (prev === 0 ? 1 : 0));
+            } else if (key === 'Enter') {
+              if (focusIndex === 0) fetchStreamsAndOpenModal();
+              else setCurrentView('catalog');
+            }
+            return;
+          }
+
+          if (focusZone === 'sidebar') {
+            const sidebarTabs = ['home', 'acao', 'aventura', 'series', 'kids', 'tiro', 'anime', 'faroeste', 'zumbis', 'addons', 'settings'];
+            const currentIdx = sidebarTabs.indexOf(activeTab);
+
+            if (key === 'ArrowUp') {
+              if (currentIdx > 0) setActiveTab(sidebarTabs[currentIdx - 1]);
+            } else if (key === 'ArrowDown') {
+              if (currentIdx < sidebarTabs.length - 1) setActiveTab(sidebarTabs[currentIdx + 1]);
+            } else if (key === 'ArrowRight' || key === 'Enter') {
+              setFocusZone('hero');
+              setFocusIndex(0);
+            }
+          } else if (focusZone === 'hero') {
+            if (key === 'ArrowDown') { setFocusZone('row-0'); setFocusIndex(0); }
+            else if (key === 'ArrowLeft') setFocusZone('sidebar');
+            else if (key === 'Enter') openDetail(FULL_CATALOG[0]);
+          } else if (focusZone.startsWith('row-')) {
+            const rowIndex = parseInt(focusZone.split('-')[1]);
+            const catKeys = ['acao', 'aventura', 'series', 'kids', 'tiro', 'anime', 'faroeste', 'zumbis'];
+            const currentItems = activeTab === 'home' 
+              ? FULL_CATALOG.filter(i => i.category === catKeys[rowIndex])
+              : FULL_CATALOG.filter(i => i.category === activeTab);
+
+            if (key === 'ArrowRight') {
+              setFocusIndex(prev => Math.min(currentItems.length - 1, prev + 1));
+            } else if (key === 'ArrowLeft') {
+              if (focusIndex === 0) setFocusZone('sidebar');
+              else setFocusIndex(prev => prev - 1);
+            } else if (key === 'ArrowDown') {
+              const maxRow = activeTab === 'home' ? 7 : 0;
+              if (rowIndex < maxRow) { setFocusZone(`row-${rowIndex + 1}`); setFocusIndex(0); }
+            } else if (key === 'ArrowUp') {
+              if (rowIndex > 0) { setFocusZone(`row-${rowIndex - 1}`); setFocusIndex(0); }
+              else setFocusZone('hero');
+            } else if (key === 'Enter') {
+              openDetail(currentItems[focusIndex]);
+            }
+          }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [focusZone, focusIndex, currentView, showStreamModal, activeTab, selectedItem, streams]);
+
+      const openDetail = (item) => {
+        setSelectedItem(item);
+        setSelectedEpisode(item.type === 'series' && item.episodes ? item.episodes[0] : null);
+        setCurrentView('detail');
+        setFocusZone('detail-actions');
+        setFocusIndex(0);
+      };
+
+      const fetchStreamsAndOpenModal = async () => {
+        setShowStreamModal(true);
+        setIsFetchingStreams(true);
+        setStreams([]);
+        setFocusIndex(0);
+
+        const activeAddons = addons.filter(a => a.enabled);
+        if (activeAddons.length === 0) { setIsFetchingStreams(false); return; }
+
+        const fetchedStreams = [];
+        const mediaId = selectedEpisode ? selectedEpisode.id : selectedItem.id;
+        const mediaType = selectedItem.type === 'series' ? 'series' : 'movie';
+
+        for (const addon of activeAddons) {
+          try {
+            const baseUrl = addon.url.replace('/manifest.json', '');
+            const streamEndpoint = `${baseUrl}/stream/${mediaType}/${encodeURIComponent(mediaId)}.json`;
+            const response = await fetch(streamEndpoint, { method: 'GET' });
+            if (response.ok) {
+              const data = await response.json();
+              if (data && Array.isArray(data.streams)) {
+                data.streams.forEach(s => {
+                  fetchedStreams.push({
+                    name: addon.name,
+                    title: s.title || s.name || 'Stream de Vídeo',
+                    url: s.url || s.externalUrl,
+                    quality: s.quality || '1080p',
+                    format: s.type || 'Direct Stream'
+                  });
+                });
+              }
+            }
+          } catch (err) {
+            console.warn(`Erro ao buscar streams do add-on ${addon.name}:`, err);
+          }
+        }
+
+        setStreams(fetchedStreams);
+        setIsFetchingStreams(false);
+      };
+
+      const handleInstallAddon = async (e) => {
+        e.preventDefault();
+        setAddonInputError('');
+        if (!newAddonUrl.trim()) { setAddonInputError('Insira a URL do manifesto.'); return; }
+        setIsInstalling(true);
+
+        try {
+          let manifestUrl = newAddonUrl.trim();
+          if (!manifestUrl.endsWith('/manifest.json')) manifestUrl = manifestUrl.replace(/\/$/, '') + '/manifest.json';
+
+          const res = await fetch(manifestUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const manifest = await res.json();
+          if (!manifest.id || !manifest.name) throw new Error('Manifesto inválido.');
+
+          if (addons.some(a => a.id === manifest.id)) throw new Error('Add-on já instalado.');
+
+          const newObj = {
+            id: manifest.id,
+            name: manifest.name,
+            version: manifest.version || '1.0.0',
+            description: manifest.description || 'Add-on customizado.',
+            icon: manifest.icon || '🌐',
+            url: manifestUrl,
+            types: manifest.types || ['movie', 'series'],
+            enabled: true,
+            installedAt: new Date().toLocaleDateString('pt-BR')
+          };
+
+          setAddons(prev => [...prev, newObj]);
+          setNewAddonUrl('');
+        } catch (err) {
+          setAddonInputError(`Falha ao instalar: ${err.message}`);
+        } finally {
+          setIsInstalling(false);
+        }
+      };
+
+      const toggleAddon = (id) => setAddons(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
+      const handleRemoveAddon = (id) => setAddons(prev => prev.filter(a => a.id !== id));
+      const launchPlayer = (stream) => { setSelectedStream(stream); setShowStreamModal(false); setCurrentView('player'); setIsPlaying(true); };
+      const formatTime = (seconds) => {
+        if (isNaN(seconds)) return '00:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+      };
+
+      const categoriesList = [
+        { id: 'acao', label: 'Ação', icon: 'fire' },
+        { id: 'aventura', label: 'Aventura', icon: 'compass' },
+        { id: 'series', label: 'Séries', icon: 'clapperboard' },
+        { id: 'kids', label: 'Kids', icon: 'child' },
+        { id: 'tiro', label: 'Tiro', icon: 'crosshairs' },
+        { id: 'anime', label: 'Anime', icon: 'dragon' },
+        { id: 'faroeste', label: 'Faroeste', icon: 'hat' },
+        { id: 'zumbis', label: 'Zumbis', icon: 'skull' }
+      ];
+
+      return (
+        <div className="w-screen h-screen bg-[#04060a] text-slate-100 font-sans overflow-hidden select-none flex flex-col relative">
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#04060a] via-[#0b0f19] to-[#04060a] pointer-events-none" />
+
+          {currentView === 'catalog' && (
+            <div className="relative z-10 flex w-full h-full">
+              <aside className={`w-24 lg:w-28 flex flex-col items-center justify-between py-6 bg-[#0b0f19]/90 border-r border-indigo-500/15 backdrop-blur-md overflow-y-auto custom-scrollbar ${focusZone === 'sidebar' ? 'ring-2 ring-cyan-400' : ''}`}>
+                <div className="flex flex-col items-center gap-5 w-full">
+                  <div className="flex flex-col items-center gap-1 cursor-pointer">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                      <Icon name="tv" className="text-white text-base" />
+                    </div>
+                    <span className="text-[9px] tracking-widest font-black uppercase text-cyan-400">Keinshu</span>
+                  </div>
+
+                  <nav className="flex flex-col gap-2 w-full px-2">
+                    <button
+                      onClick={() => { setActiveTab('home'); setFocusZone('sidebar'); }}
+                      className={`w-full py-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                        focusZone === 'sidebar' && activeTab === 'home' ? 'bg-cyan-500 text-slate-950 font-black shadow-lg scale-105' : activeTab === 'home' ? 'bg-indigo-600/30 text-cyan-400 border border-indigo-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Icon name="home" className="text-sm" />
+                      <span className="text-[9px] font-bold">Início</span>
+                    </button>
+
+                    {categoriesList.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { setActiveTab(cat.id); setFocusZone('sidebar'); }}
+                        className={`w-full py-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                          focusZone === 'sidebar' && activeTab === cat.id ? 'bg-cyan-500 text-slate-950 font-black shadow-lg scale-105' : activeTab === cat.id ? 'bg-indigo-600/30 text-cyan-400 border border-indigo-500/30' : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <Icon name={cat.icon} className="text-sm" />
+                        <span className="text-[9px] font-bold">{cat.label}</span>
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => { setActiveTab('addons'); setFocusZone('sidebar'); }}
+                      className={`w-full py-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                        focusZone === 'sidebar' && activeTab === 'addons' ? 'bg-cyan-500 text-slate-950 font-black shadow-lg scale-105' : activeTab === 'addons' ? 'bg-indigo-600/30 text-cyan-400 border border-indigo-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Icon name="puzzle" className="text-sm" />
+                      <span className="text-[9px] font-bold">Add-ons</span>
+                    </button>
+
+                    <button
+                      onClick={() => { setActiveTab('settings'); setFocusZone('sidebar'); }}
+                      className={`w-full py-2 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                        focusZone === 'sidebar' && activeTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-black shadow-lg scale-105' : activeTab === 'settings' ? 'bg-indigo-600/30 text-cyan-400 border border-indigo-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Icon name="settings" className="text-sm" />
+                      <span className="text-[9px] font-bold">Ajustes</span>
+                    </button>
+                  </nav>
+                </div>
+              </aside>
+
+              <main className="flex-1 h-full overflow-y-auto px-8 py-6 custom-scrollbar">
+                <div className="flex items-center justify-between mb-8">
+                  <span className="text-2xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+                    {activeTab === 'home' && 'Keinshu TV - 200 Títulos em 4K'}
+                    {activeTab !== 'home' && activeTab !== 'addons' && activeTab !== 'settings' && `Categoria: ${categoriesList.find(c => c.id === activeTab)?.label} (25 Títulos)`}
+                    {activeTab === 'addons' && 'Gerenciador de Add-ons'}
+                    {activeTab === 'settings' && 'Configurações Keinshu TV'}
+                  </span>
+
+                  <button 
+                    onClick={() => { setActiveTab('addons'); setFocusZone('sidebar'); }}
+                    className={`px-4 py-2 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all ${
+                      addons.filter(a => a.enabled).length > 0 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${addons.filter(a => a.enabled).length > 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                    <span>{addons.filter(a => a.enabled).length} Add-ons Ativos</span>
+                  </button>
+                </div>
+
+                {activeTab === 'home' && (
+                  <div className="space-y-10">
+                    <div 
+                      onClick={() => openDetail(FULL_CATALOG[0])}
+                      className={`relative w-full h-[340px] rounded-3xl overflow-hidden cursor-pointer border border-indigo-500/20 group ${
+                        focusZone === 'hero' ? 'ring-4 ring-cyan-400 scale-[1.01] shadow-2xl' : ''
+                      }`}
+                    >
+                      <ImageWithFallback src={FULL_CATALOG[0].backdrop} alt={FULL_CATALOG[0].title} title={FULL_CATALOG[0].title} year={FULL_CATALOG[0].year} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#04060a] via-[#04060a]/70 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-8 left-8 max-w-2xl space-y-3 z-20">
+                        <div className="flex items-center gap-3">
+                          <span className="px-3 py-1 rounded-full bg-cyan-500/90 text-xs font-black text-slate-950 uppercase">Destaque 4K</span>
+                          <div className="flex items-center gap-1 text-amber-400 font-extrabold text-sm bg-black/60 px-2.5 py-0.5 rounded-lg border border-amber-500/30">
+                            <Icon name="star" className="text-amber-400 text-xs" />
+                            <span>{FULL_CATALOG[0].rating}</span>
+                          </div>
+                          <span className="text-slate-300 font-bold text-xs">{FULL_CATALOG[0].duration}</span>
+                        </div>
+                        <h1 className="text-4xl font-black text-white">{FULL_CATALOG[0].title}</h1>
+                        <p className="text-slate-300 text-sm line-clamp-2 max-w-xl">{FULL_CATALOG[0].overview}</p>
+                      </div>
+                    </div>
+
+                    {categoriesList.map((cat, rowIndex) => {
+                      const rowItems = FULL_CATALOG.filter(i => i.category === cat.id);
+                      return (
+                        <div key={cat.id} className="space-y-4">
+                          <h2 className="text-xl font-black text-white flex items-center gap-2">
+                            <Icon name={cat.icon} className="text-cyan-400" />
+                            <span>{cat.label}</span>
+                          </h2>
+                          <div className="flex items-center gap-5 overflow-x-auto pb-4 custom-scrollbar">
+                            {rowItems.map((item, idx) => {
+                              const isFocused = focusZone === `row-${rowIndex}` && focusIndex === idx;
+                              return (
+                                <div
+                                  key={item.id}
+                                  onClick={() => openDetail(item)}
+                                  className={`flex-none w-48 rounded-2xl overflow-hidden bg-[#0e131f] border border-indigo-500/20 cursor-pointer transition-all flex flex-col ${
+                                    isFocused ? 'ring-4 ring-cyan-400 scale-105 shadow-xl' : 'hover:scale-102'
+                                  }`}
+                                >
+                                  <div className="w-full h-64 overflow-hidden relative">
+                                    <ImageWithFallback src={item.poster} alt={item.title} title={item.title} year={item.year} />
+                                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-black/80 text-[10px] font-black text-amber-400 flex items-center gap-1 border border-amber-500/20">
+                                      <Icon name="star" className="text-amber-400 text-[10px]" />
+                                      <span>{item.rating}</span>
+                                    </div>
+                                  </div>
+                                  <div className="p-3 bg-[#0a0e17] flex-1 flex flex-col justify-between">
+                                    <h3 className="font-extrabold text-white text-sm line-clamp-1">{item.title}</h3>
+                                    <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1 font-medium">
+                                      <span>{item.year}</span>
+                                      <span className="text-cyan-400 font-bold">{item.duration || `${item.seasons} Temp.`}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeTab !== 'home' && activeTab !== 'addons' && activeTab !== 'settings' && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                    {FULL_CATALOG.filter(i => i.category === activeTab).map((item, idx) => {
+                      const isFocused = focusZone === 'row-0' && focusIndex === idx;
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => openDetail(item)}
+                          className={`rounded-2xl overflow-hidden bg-[#0e131f] border border-indigo-500/20 cursor-pointer transition-all flex flex-col ${
+                            isFocused ? 'ring-4 ring-cyan-400 scale-105 shadow-xl' : 'hover:scale-102'
+                          }`}
+                        >
+                          <div className="w-full h-64 overflow-hidden relative">
+                            <ImageWithFallback src={item.poster} alt={item.title} title={item.title} year={item.year} />
+                            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-black/80 text-[10px] font-black text-amber-400 flex items-center gap-1 border border-amber-500/20">
+                              <Icon name="star" className="text-amber-400 text-[10px]" />
+                              <span>{item.rating}</span>
+                            </div>
+                          </div>
+                          <div className="p-3 bg-[#0a0e17] flex-1 flex flex-col justify-between">
+                            <h3 className="font-extrabold text-white text-sm line-clamp-1">{item.title}</h3>
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1 font-medium">
+                              <span>{item.year}</span>
+                              <span className="text-cyan-400 font-bold">{item.duration || `${item.seasons} Temp.`}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeTab === 'addons' && (
+                  <div className="space-y-6 max-w-4xl">
+                    <div className="bg-[#0e131f] p-6 rounded-2xl border border-indigo-500/20 space-y-4">
+                      <h2 className="text-lg font-black text-white flex items-center gap-2">
+                        <Icon name="plus" className="text-cyan-400" />
+                        <span>Instalar Add-on via URL</span>
+                      </h2>
+                      <p className="text-xs text-slate-300">
+                        Padrões instalados:<br/>
+                        <code className="text-cyan-300 bg-black/60 px-1.5 py-0.5 rounded font-mono">https://catalog.nuvio.tv/manifest.json</code><br/>
+                        <code className="text-cyan-300 bg-black/60 px-1.5 py-0.5 rounded font-mono">https://opensubtitles-v3.strem.io/manifest.json</code>
+                      </p>
+                      <form onSubmit={handleInstallAddon} className="flex gap-3">
+                        <input 
+                          type="url" 
+                          value={newAddonUrl}
+                          onChange={(e) => setNewAddonUrl(e.target.value)}
+                          placeholder="https://exemplo-addon.com/manifest.json"
+                          className="flex-1 px-4 py-3 rounded-xl bg-black/60 border border-indigo-500/30 text-white text-sm font-mono"
+                        />
+                        <button type="submit" className="px-6 py-3 rounded-xl bg-cyan-500 text-slate-950 font-black text-sm">Instalar</button>
+                      </form>
+                      {addonInputError && <p className="text-xs text-rose-400">{addonInputError}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {addons.map((addon) => (
+                        <div key={addon.id} className="p-5 rounded-2xl bg-[#0e131f] border border-cyan-500/30 flex flex-col justify-between space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{addon.icon}</span>
+                              <div>
+                                <h3 className="font-bold text-white text-base">{addon.name}</h3>
+                                <p className="text-xs text-slate-400">v{addon.version}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => toggleAddon(addon.id)} className="text-emerald-400 text-xl">
+                              {addon.enabled ? <Icon name="toggle-right" /> : <Icon name="toggle-left" />}
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-300">{addon.description}</p>
+                          <button onClick={() => handleRemoveAddon(addon.id)} className="text-xs text-rose-400 font-bold self-start">Remover</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'settings' && (
+                  <div className="space-y-6 max-w-3xl">
+                    <div className="bg-[#0e131f] p-6 rounded-2xl border border-indigo-500/20 space-y-4">
+                      <h2 className="text-lg font-black text-white flex items-center gap-2">
+                        <Icon name="shield-check" className="text-cyan-400" />
+                        <span>Chave TMDb</span>
+                      </h2>
+                      <input 
+                        type="text" 
+                        value={tmdbApiKey}
+                        onChange={(e) => setTmdbApiKey(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl bg-black/60 border border-indigo-500/30 text-white text-sm font-mono"
+                      />
+                      <button onClick={handleSaveSettings} className="px-6 py-3 rounded-xl bg-cyan-500 text-slate-950 font-black text-xs">Salvar</button>
+                      {saveNotice && <p className="text-xs text-emerald-300 font-bold">Salvo com sucesso!</p>}
+                    </div>
+                  </div>
+                )}
+              </main>
+            </div>
+          )}
+
+          {currentView === 'detail' && selectedItem && (
+            <div className="relative z-20 w-full h-full flex flex-col justify-between p-12 overflow-y-auto bg-[#04060a]">
+              <button onClick={() => setCurrentView('catalog')} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm w-48 flex items-center gap-2 border border-slate-700">
+                <Icon name="arrow-left" className="text-xs" />
+                <span>Voltar (ESC)</span>
+              </button>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 my-auto items-center">
+                <div className="w-72 h-96 rounded-3xl overflow-hidden border border-indigo-500/30 shadow-2xl mx-auto lg:mx-0">
+                  <ImageWithFallback src={selectedItem.poster} alt={selectedItem.title} title={selectedItem.title} year={selectedItem.year} />
+                </div>
+                <div className="lg:col-span-2 space-y-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1 px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-extrabold text-sm">
+                      <Icon name="star" className="text-xs" />
+                      <span>{selectedItem.rating}</span>
+                    </div>
+                    <span className="text-slate-300 font-bold text-sm">{selectedItem.year}</span>
+                    <span className="text-cyan-400 font-bold text-sm">{selectedItem.duration || `${selectedItem.seasons} Temporada(s)`}</span>
+                  </div>
+
+                  <h1 className="text-5xl font-black text-white">{selectedItem.title}</h1>
+                  <p className="text-slate-200 text-base leading-relaxed max-w-3xl">{selectedItem.overview}</p>
+
+                  {selectedItem.type === 'series' && selectedItem.episodes && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase text-cyan-400">Episódios</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                        {selectedItem.episodes.map((ep) => (
+                          <button 
+                            key={ep.id}
+                            onClick={() => setSelectedEpisode(ep)}
+                            className={`p-3 rounded-xl border text-left min-w-[200px] ${
+                              selectedEpisode?.id === ep.id ? 'bg-cyan-500/20 border-cyan-400 text-white ring-2 ring-cyan-400' : 'bg-slate-900 border-slate-800 text-slate-400'
+                            }`}
+                          >
+                            <div className="flex justify-between text-[10px] font-bold">
+                              <span>EP {ep.number}</span>
+                              <span>{ep.duration}</span>
+                            </div>
+                            <h4 className="text-xs font-bold text-white truncate mt-1">{ep.title}</h4>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 pt-4">
+                    <button onClick={fetchStreamsAndOpenModal} className="px-8 py-4 rounded-2xl bg-cyan-500 text-slate-950 font-black text-base flex items-center gap-3 shadow-xl ring-4 ring-white">
+                      <Icon name="play" />
+                      <span>Buscar Transmissões em Add-ons</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showStreamModal && selectedItem && (
+            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
+              <div className="bg-[#0e131f] border border-indigo-500/30 w-full max-w-2xl rounded-3xl p-6 shadow-2xl space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <h3 className="font-black text-white text-lg">Fontes de Transmissão ({selectedItem.title})</h3>
+                  <button onClick={() => setShowStreamModal(false)} className="text-slate-400 hover:text-white"><Icon name="x" /></button>
+                </div>
+
+                {isFetchingStreams ? (
+                  <div className="py-12 text-center space-y-3">
+                    <Icon name="refresh-cw" className="text-2xl text-cyan-400 animate-spin mx-auto" />
+                    <p className="text-sm font-black text-white">Consultando add-ons instalados...</p>
+                  </div>
+                ) : streams.length > 0 ? (
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {streams.map((src, index) => (
+                      <div key={index} onClick={() => launchPlayer(src)} className="p-4 rounded-2xl border border-slate-800 hover:border-cyan-400 bg-slate-900 cursor-pointer flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white text-sm">{src.title}</span>
+                            <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px]">{src.quality}</span>
+                          </div>
+                          <p className="text-xs text-slate-400">Provedor: {src.name}</p>
+                        </div>
+                        <Icon name="play" className="text-cyan-400" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center space-y-2">
+                    <p className="text-sm font-black text-white">Nenhum link retornado diretamente pelos add-ons</p>
+                    <p className="text-xs text-slate-400">Instale um add-on provedor de torrent/streams na aba Add-ons para carregar links.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {currentView === 'player' && selectedStream && (
+            <div onMouseMove={handlePlayerMouseMove} className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden">
+              <video 
+                ref={videoRef}
+                src={selectedStream.url}
+                autoPlay
+                className="w-full h-full object-contain"
+                onTimeUpdate={() => {
+                  if (videoRef.current) {
+                    setPlaybackProgress(videoRef.current.currentTime);
+                    setDuration(videoRef.current.duration || 0);
+                  }
+                }}
+                onEnded={() => setCurrentView('detail')}
+              />
+              <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/60 transition-opacity flex flex-col justify-between p-8 ${isControlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className="flex items-center justify-between">
+                  <button onClick={() => setCurrentView('detail')} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs">Sair</button>
+                  <h2 className="font-black text-white text-lg">{selectedItem?.title}</h2>
+                  <span className="text-xs text-slate-300 font-mono">{formatTime(playbackProgress)} / {formatTime(duration)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
